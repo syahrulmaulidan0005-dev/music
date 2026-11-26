@@ -1,0 +1,30 @@
+name: Build APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: "8.9" }
+      - run: gradle assembleDebug --no-daemon
+      - name: Siapkan APK
+        run: cp app/build/outputs/apk/debug/*.apk LiveMusic.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LiveMusic-debug-apk
+          path: LiveMusic.apk
+      - name: Buat Release (link unduhan tetap)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v1.0-build${{ github.run_number }}" LiveMusic.apk \
+            --title "Live Music build ${{ github.run_number }}" \
+            --notes "APK debug otomatis dari commit ${{ github.sha }}"
